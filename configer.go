@@ -1,4 +1,4 @@
-package configCenter
+package configcenter
 
 import (
 	"io/ioutil"
