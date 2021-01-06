@@ -2,6 +2,7 @@ package configcenter
 
 import (
 	"io/ioutil"
+	"src/zlib"
 	"strings"
 	"fmt"
 	"strconv"
@@ -34,66 +35,66 @@ func NewConfiger (fileTotalSizeMax int ,fileSizeMax int , fileCntMax int ,allowE
 	configer.AllowExtType = allowExtType
 	configer.PathLevel = 4
 
-	myPrint("create Configer obj , fileTotalSizeMax: ",fileTotalSizeMax , "m , fileSizeMax:",fileSizeMax ,"m ,fileCntMax:",fileCntMax ," , allowExtType:",allowExtType)
+	zlib.MyPrint("create Configer obj , fileTotalSizeMax: ",fileTotalSizeMax , "m , fileSizeMax:",fileSizeMax ,"m ,fileCntMax:",fileCntMax ," , allowExtType:",allowExtType)
 
 	return configer
 }
 //检查 成员变量 初始值 是否正确
 func (configer *Configer) checkMemberVariable()error{
 	if configer.FileTotalSizeMax == 0 {
-		return NewCoder(400,"FileTotalSizeMax == 0")
+		return zlib.NewCoder(400,"FileTotalSizeMax == 0")
 	}
 
 	if configer.FileSizeMax == 0 {
-		return NewCoder(401,"FileSizeMax == 0")
+		return zlib.NewCoder(401,"FileSizeMax == 0")
 	}
 
 	if configer.FileCntMax == 0 {
-		return NewCoder(402,"FileCntMax == 0")
+		return zlib.NewCoder(402,"FileCntMax == 0")
 	}
 
 	if configer.RootPath == "" {
-		return NewCoder(403,"RootPath is empty or not exec <StartLoading>")
+		return zlib.NewCoder(403,"RootPath is empty or not exec <StartLoading>")
 	}
 	return nil
 }
 //开始加载 - 指定目录 - 所有ini配置文件到内存
 func (configer *Configer) StartLoading(rootPath string)error{
-	myPrint("StartLoading init..."+rootPath)
+	zlib.MyPrint("StartLoading init..."+rootPath)
 	isDir := checkIsDir(rootPath)
 	if !isDir{
-		return NewCoder(300,"path not is dir")
+		return zlib.NewCoder(300,"path not is dir")
 	}
 
 	if configer.RootPath != ""{
-		return NewCoder(301,"configer.RootPath has been value")
+		return zlib.NewCoder(301,"configer.RootPath has been value")
 	}
 	configer.RootPath = rootPath
 	err := configer.checkMemberVariable()
 	if err != nil{
-		newErr := Wrap(err,"StartLoading checkMemberVariable")
+		newErr := zlib.Wrap(err,"StartLoading checkMemberVariable")
 		return newErr
 	}
-	myPrint("check path ok~")
+	zlib.MyPrint("check path ok~")
 	//获取指定文件夹下面的，所有目录及文件
 	fileList,dirList,err := configer.GetAllFiles(rootPath)
 	if err != nil{
-		wrapErr := Wrap(err,"GetAllFiles")
-		return wrapErr
+		WrapErr := zlib.Wrap(err,"GetAllFiles")
+		return WrapErr
 	}
 	//fmt.Println("dirList",dirList)
 	if len(dirList) == 0 {
-		return NewCoder(700,"this dir ,no include app dir")
+		return zlib.NewCoder(700,"this dir ,no include app dir")
 	}
 	//fmt.Println("fileList",fileList)
 	if len(fileList) <= 0 {
-		return NewCoder(701,"this dir ,no include any files.")
+		return zlib.NewCoder(701,"this dir ,no include any files.")
 	}
 
 	if len(fileList) > configer.FileCntMax {
-		return NewCoder(702,"fileCntMax:"+strconv.Itoa(configer.FileCntMax))
+		return zlib.NewCoder(702,"fileCntMax:"+strconv.Itoa(configer.FileCntMax))
 	}
-	myPrint("get path dir and file ok,files num :",len(fileList)," dirs num : ",len(dirList))
+	zlib.MyPrint("get path dir and file ok,files num :",len(fileList)," dirs num : ",len(dirList))
 	//初始化全局-内存池，用于接收文件内容
 	containerFileContent := make(map[string]map[string]LoadIniFile)
 	for i:=0;i<len(dirList);i++{
@@ -110,25 +111,25 @@ func (configer *Configer) StartLoading(rootPath string)error{
 		//告诉  解析类  解析哪个文件
 		err := loadIniFile.setPathFile(fileList[i])
 		if err != nil {
-			newErr := Wrap(err,"loadIniFile setPathFile")
+			newErr := zlib.Wrap(err,"loadIniFile setPathFile")
 			return newErr
 		}
 		//解析文件类，开始处理
 		err2 := loadIniFile.process()
 		if err2 != nil {
-			newErr := Wrap(err,"LoadIniFileContent")
+			newErr := zlib.Wrap(err,"LoadIniFileContent")
 			return newErr
 		}
 		//fmt.Println(loadIniFile.contentSection)
 		//判断 单个文件内容最大值
 		//fmt.Println("file size : ",loadIniFile.fileSize)
 		if loadIniFile.fileSize > int64(configer.FileSizeMax * 1024 * 1024)  {
-			return NewCoder(703,"fileSizeMax:"+strconv.Itoa(configer.FileSizeMax))
+			return zlib.NewCoder(703,"fileSizeMax:"+strconv.Itoa(configer.FileSizeMax))
 		}
 		//判断 所有文件内容 最大值
 		fileTotalSize += loadIniFile.fileSize
 		if fileTotalSize > int64(configer.FileTotalSizeMax * 1024 * 1024)  {
-			return NewCoder(704,"fileTotalSize:"+strconv.Itoa(configer.FileTotalSizeMax))
+			return zlib.NewCoder(704,"fileTotalSize:"+strconv.Itoa(configer.FileTotalSizeMax))
 		}
 		//构建key :  文件夹名(appName)/文件名(不包括扩展名)/元素-key/元素-value
 		appName := configer.GetAppNameByPathFile(fileList[i],rootPath)
@@ -136,7 +137,7 @@ func (configer *Configer) StartLoading(rootPath string)error{
 
 		containerFileContent[appName][fileName] = loadIniFile
 	}
-	myPrint("fileTotalSize : ",fileTotalSize,"byte")
+	zlib.MyPrint("fileTotalSize : ",fileTotalSize,"byte")
 	//fmt.Println(containerFileContent)
 	//将 新文件解析后的内容，放置到统一的map容器中
 	configer.ContainerFileContent = containerFileContent
@@ -181,14 +182,14 @@ func (configer *Configer) GetFileNameByPath(path string , rootPath string)(fileN
 }
 //搜索
 func (configer *Configer) Search(path string)(data string,err error){
-	myPrint(" search : ",path)
+	zlib.MyPrint(" search : ",path)
 	data  = "{}" //返回一个空对象，用于默认值
 	if path == ""{
-		return data,NewCoder(400,"path is empty")
+		return data,zlib.NewCoder(400,"path is empty")
 	}
 	err2 := configer.checkMemberVariable()
 	if err2 != nil{
-		newErr := Wrap(err2,"Search checkMemberVariable")
+		newErr := zlib.Wrap(err2,"Search checkMemberVariable")
 		return data,newErr
 	}
 
@@ -196,7 +197,7 @@ func (configer *Configer) Search(path string)(data string,err error){
 	path = strings.Trim(path,"/")//过滤首尾反斜杠
 	pathSplit := strings.Split(path, "/")
 	if len(pathSplit) > configer.PathLevel {
-		return data,NewCoder(401,"目前路径，仅支持最大4级   项目名/文件名/模块名/key")
+		return data,zlib.NewCoder(401,"目前路径，仅支持最大4级   项目名/文件名/模块名/key")
 	}
 	appName := pathSplit[0]
 	//先搜索一级路径 : appName
@@ -235,9 +236,9 @@ func (configer *Configer) Search(path string)(data string,err error){
 
 		appNameFileName := appName+"/"+fileName
 		searchFileContentPath := strings.Replace(path, appNameFileName,"",-1)
-		//myPrint("searchFileContentPath : ",searchFileContentPath)
+		//zlib.MyPrint("searchFileContentPath : ",searchFileContentPath)
 		content := fileContent.search(searchFileContentPath)
-		//myPrint(content)
+		//zlib.MyPrint(content)
 		jsonRs , _ := json.Marshal(content)
 		return string(jsonRs),nil
 	}
@@ -250,7 +251,7 @@ func (configer *Configer)  SearchContainerFileContent(){
 func (configer *Configer) ShowFormatContent()error{
 	err2 := configer.checkMemberVariable()
 	if err2 != nil{
-		newErr := Wrap(err2,"Search checkMemberVariable")
+		newErr := zlib.Wrap(err2,"Search checkMemberVariable")
 		return  newErr
 	}
 
@@ -269,7 +270,7 @@ func  (configer *Configer) GetAllFiles(dirPth string) (files []string, returnDir
 	var dirs []string
 	dir, err := ioutil.ReadDir(dirPth)
 	if err != nil {
-		return files,returnDirs,NewCoder(600,err.Error())
+		return files,returnDirs,zlib.NewCoder(600,err.Error())
 	}
 
 	PthSep := string(os.PathSeparator)

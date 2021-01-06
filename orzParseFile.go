@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"encoding/json"
+	"src/zlib"
 )
 const DefaultCommentChar = ";"
 
@@ -22,19 +23,19 @@ func (loadIniFile *LoadIniFile)getContent(){
 }
 //设置文件路径
 func (loadIniFile *LoadIniFile)setPathFile(pathFile string)error{
-	myPrint(" setPathFile ",pathFile)
+	zlib.MyPrint(" setPathFile ",pathFile)
 	loadIniFile.pathFile = pathFile
 	info, err := os.Stat(pathFile)
 	if err != nil {
-		NewCoder(603,err.Error())
+		zlib.NewCoder(603,err.Error())
 	}
 
 	if info.IsDir() {
-		return  NewCoder(601,"file path is a folder.")
+		return  zlib.NewCoder(601,"file path is a folder.")
 	}
 
 	if info.Size() == 0 {
-		return  NewCoder(602,"file is empty.")
+		return  zlib.NewCoder(602,"file is empty.")
 	}
 	loadIniFile.fileSize = info.Size()
 
@@ -47,13 +48,13 @@ func (loadIniFile *LoadIniFile)setPathFile(pathFile string)error{
 func (loadIniFile *LoadIniFile)process()error{
 	//fmt.Println("loadIniFile process",loadIniFile.pathFile)
 	if loadIniFile.pathFile == "" {
-		return NewCoder(600,"config path is empty")
+		return zlib.NewCoder(600,"config path is empty")
 	}
 
 	fileFd, err := os.Open(loadIniFile.pathFile)
 	if err != nil {
 		//return sectionContent,normalContent,err
-		return  NewCoder(604,err.Error())
+		return  zlib.NewCoder(604,err.Error())
 	}
 	defer fileFd.Close()
 
@@ -102,18 +103,18 @@ func (loadIniFile *LoadIniFile)process()error{
 	sectionContentLen := len(sectionContent)
 	normalContentLen := len(normalContent)
 	if sectionContentLen == 0 && normalContentLen == 0 {
-		return  NewCoder(607,"file is empty.")
+		return  zlib.NewCoder(607,"file is empty.")
 	}
 	//fmt.Println("sectionContentLen",sectionContentLen,"normalContentLen",normalContentLen)
 	loadIniFile.contentNormal = normalContent
 	loadIniFile.contentSection = sectionContent
 	loadIniFile.mergeContent()
-	myPrint("load file ,size : ",loadIniFile.fileSize," byte , contentSection:" ,sectionContent , " content : ",loadIniFile.content)
+	zlib.MyPrint("load file ,size : ",loadIniFile.fileSize," byte , contentSection:" ,sectionContent , " content : ",loadIniFile.content)
 	return nil
 }
 
 func (loadIniFile *LoadIniFile) search(path string)interface{}{
-	myPrint("search file content: ",path)
+	zlib.MyPrint("search file content: ",path)
 	path = strings.TrimSpace(path)//过滤首尾空格
 	path = strings.Trim(path,"/")//过滤首尾反斜杠
 	pathSplit := strings.Split(path, "/")
@@ -127,7 +128,7 @@ func (loadIniFile *LoadIniFile) search(path string)interface{}{
 			}
 		}
 	}else if len(pathSplit) == 2{
-		//myPrint("sub : ",pathSplit[1])
+		//zlib.MyPrint("sub : ",pathSplit[1])
 		for k, v := range loadIniFile.content {
 			if k == pathSplit[0]{
 				subLevel := v.(map[string]string)

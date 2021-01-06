@@ -1,10 +1,11 @@
 package configcenter
 
 import (
-	"net/http"
-	"strconv"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"src/zlib"
+	"strconv"
 	"time"
 )
 
@@ -30,7 +31,7 @@ func NewHttpd(port int ,host string,configer *Configer) *Httpd{
 func (httpd *Httpd)Start(){
 	http.HandleFunc("/", httpd.RouterHandler)
 	dns := httpd.Host + ":" + strconv.Itoa(httpd.Port)
-	myPrint("httpd start loop:",dns)
+	zlib.MyPrint("httpd start loop:",dns)
 
 	err := http.ListenAndServe(dns, nil)
 	if err != nil {
@@ -61,7 +62,7 @@ func (httpd *Httpd)RouterHandler(w http.ResponseWriter, r *http.Request){
 	//fmt.Printf("时间戳（秒）：%v;\n", time.Now().Unix())
 	//time.Now().UnixNano()
 
-	myPrint("receiver: have a new request.(", time.Now().Format("2006-01-02 15:04:05"),")")
+	zlib.MyPrint("receiver: have a new request.(", time.Now().Format("2006-01-02 15:04:05"),")")
 	parameter := r.URL.Query()
 	fmt.Println("url.query",parameter)
 	fmt.Println("uri",r.URL.RequestURI())
