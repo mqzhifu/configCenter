@@ -20,15 +20,30 @@ type Httpd struct {
 	configer *Configer
 
 }
-func NewHttpd(port int ,host string,configer *Configer) *Httpd{
+
+func NewHttpd(port int ,host string,configerInitData Configer) *Httpd{
+	zlib.MyPrint("NewHttpd : ",host,port,configerInitData)
 	httpd := new (Httpd)
 	httpd.Port = port
 	httpd.Host = host
+	configer := NewConfiger(
+		configerInitData.FileTotalSizeMax ,
+		configerInitData.FileSizeMax,
+		configerInitData.FileCntMax,
+		configerInitData.AllowExtType,
+		)
+
+	err := configer.StartLoading(configerInitData.RootPath)
+	if err != nil{
+		zlib.MyPrint("StartLoading err",err.Error())
+	}
+
 	httpd.configer = configer
 	return httpd
 }
 
 func (httpd *Httpd)Start(){
+
 	http.HandleFunc("/", httpd.RouterHandler)
 	dns := httpd.Host + ":" + strconv.Itoa(httpd.Port)
 	zlib.MyPrint("httpd start loop:",dns)
@@ -57,15 +72,14 @@ func ResponseStatusCode(w http.ResponseWriter,code int ,responseInfo string){
 	w.WriteHeader(403)
 	w.Write([]byte(responseInfo))
 }
-
+//主要，是接收HTTP 回调
 func (httpd *Httpd)RouterHandler(w http.ResponseWriter, r *http.Request){
 	//fmt.Printf("时间戳（秒）：%v;\n", time.Now().Unix())
 	//time.Now().UnixNano()
 
 	zlib.MyPrint("receiver: have a new request.(", time.Now().Format("2006-01-02 15:04:05"),")")
 	parameter := r.URL.Query()
-	fmt.Println("url.query",parameter)
-	fmt.Println("uri",r.URL.RequestURI())
+	zlib.MyPrint("uri",r.URL.RequestURI(),"url.query",parameter)
 	if r.URL.RequestURI() == "/favicon.ico" {
 		ResponseStatusCode(w,403,"no power")
 		return
@@ -77,11 +91,16 @@ func (httpd *Httpd)RouterHandler(w http.ResponseWriter, r *http.Request){
 	//	return
 	//}
 	if r.URL.RequestURI() == "" || r.URL.RequestURI() == "/" {
-		ResponseStatusCode(w,500,"RequestURI is null")
+		ResponseStatusCode(w,500,"RequestURI is null or not  '/' start")
 		return
 	}
 
-	searchRs,_ := httpd.configer.Search(r.URL.RequestURI())
+	searchRs,err := httpd.configer.Search(r.URL.RequestURI())
+	if err != nil {
+		zlib.MyPrint("search err",err.Error())
+		ResponseMsg(w,500,err.Error())
+	}
+	zlib.MyPrint("searchRs",searchRs)
 	ResponseMsg(w,200,searchRs)
 
 }
