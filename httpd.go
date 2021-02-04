@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"src/zlib"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -55,14 +56,18 @@ func (httpd *Httpd)Start(){
 	}
 }
 
-func ResponseMsg(w http.ResponseWriter,code int ,msg interface{} ){
+func ResponseMsg(w http.ResponseWriter,code int ,msg string ){
 	//fmt.Println("SetResponseMsg in",code,msg)
-	responseMsgST := ResponseMsgST{Code:code,Msg:msg}
+	//responseMsgST := ResponseMsgST{Code:code,Msg:msg}
+	responseMsgST := ResponseMsgST{Code:code,Msg:"#msg#"}
+	msg = msg[1:len(msg)-1]
+	//这里有个无奈的地方，为了兼容非网络请求，正常使用时，返回的就是json,现在HTTP套一层，还得再一层JSON，冲突了
 	//fmt.Println("responseMsg : ",responseMsg)
 	jsonResponseMsg , err := json.Marshal(responseMsgST)
-	fmt.Println("SetResponseMsg rs",err, string(jsonResponseMsg))
+	jsonResponseMsgNew := strings.Replace(string(jsonResponseMsg),"#msg#",msg,-1)
+	fmt.Println("SetResponseMsg rs",err, string(jsonResponseMsgNew))
 
-	_, _ = w.Write(jsonResponseMsg)
+	_, _ = w.Write([]byte(jsonResponseMsgNew))
 
 }
 
